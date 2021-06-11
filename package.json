@@ -1,0 +1,31 @@
+{
+  "name": "piggyfinance",
+  "version": "1.0.0",
+  "description": "Piggy Finance",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Savings",
+    "Defi",
+    "Yield",
+    "Farming",
+    "Staking",
+    "Compound",
+    "Porotocol",
+    "Venus.io"
+  ],
+  "author": "Oluwafemi Alofe",
+  "license": "ISC",
+  "dependencies": {
+    "web3": "^1.3.6"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts-upgradeable": "^4.1.0",
+    "@openzeppelin/truffle-upgrades": "^1.7.0"
+  }
+}
