@@ -3,26 +3,26 @@
 pragma solidity ^0.8.0;
 
 import  "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import  "@openzeppelin/contracts-upgradeable/access/OwnableUpgradable.sol";
+import  "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./IERC20.sol";
 import "./ICERC20.sol";
 
-contract PiggyFi is Initializable{
+contract PiggyFi is OwnableUpgradeable{
 
     /// @dev To take care of decimals during exchange
     uint public mantissa = 1e8;
 
     uint public minimumFiatTnxAllowed = 100 * 10 ** 8;
 
-    uint public maximumFiatTnxAllowed = 100000000 * 10 ** 8
+    uint public maximumFiatTnxAllowed = 100000000 * 10 ** 8;
 
     /// @dev Imitate statuses from Venus and Compoud Protocol
     /// @param OK implicity converted to 0 by the compiler, 0 = success in aformentioned protocols
-    enum internal Statuses { OK }
+    enum Statuses{ OK }
 
     /// @dev user Dia balances held in this protocol and not yet staked
-    /// @param address user BEP20/ERC20 address
-    /// @param uint user balance
+    /// @dev address user BEP20/ERC20 address
+    /// @dev uint user balance
     mapping (address => uint) public diaBalances;
 
     /// @param name P2P vendor name
@@ -34,24 +34,24 @@ contract PiggyFi is Initializable{
       uint buyRateMantissa;
       uint sellRateMantissa;
       uint minimumLimitMantissa;
-      uint maximumLimitMantissa
+      uint maximumLimitMantissa;
       bool locked;
     }
 
-    /// @param address vendor
-    /// @param uint index in buyDiaListings
+    /// @dev address vendor
+    /// @dev uint index in buyDiaListings
     mapping (address => uint) public buyDiaVendors;
 
-    /// @param address vendor
-    /// @param uint index in sellDiaListings
+    /// @dev address vendor
+    /// @dev uint index in sellDiaListings
     mapping (address => listing) public sellDiaVendors;
 
-    /// @param address vendor
-    /// @param uint index in sellFiatListings
+    /// @dev address vendor
+    /// @dev uint index in sellFiatListings
     mapping (address => listing) public buyFiatVendors;
 
-    /// @param address vendor
-    /// @param uint index in sellFiatListings
+    /// @dev address vendor
+    /// @dev uint index in sellFiatListings
     mapping (address => listing) public sellFiatVendors;
 
     listing[] public buyDaiListings;
@@ -62,18 +62,20 @@ contract PiggyFi is Initializable{
 
     listing[] public sellFiatListings;
 
-
     /// @dev Total liquidy available to savers
-    uint public totalDiaLiquidity
+    uint public totalDiaLiquidity;
 
     /// @dev Total Fiat liquidy available to savers
     /// @dev decimals 8, where 1 NGN = 1e8
-    uint public totalFiatLiquidityMantissa
+    uint public totalFiatLiquidityMantissa;
 
     /// @dev Total staked Dai via this contract till date
     uint public totalDaiSupplied;
 
-    function __PiggyFinance_init() internal initializer{
+    /// @dev contract constructor called only once
+    function __PiggyFi_init() internal initializer{
       __Ownable_init();
     }
+
+
 }
