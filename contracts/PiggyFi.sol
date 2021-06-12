@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import  "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import  "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./IERC20.sol";
-import "./ICERC20.sol";
+import "./IBEP20.sol";
+import "./IVBEP20.sol";
 
 /// @author [Email](mailto:oluwafemialofe@yahoo.com) [Telegram](t.me/@DreWhyte)
 contract PiggyFi is OwnableUpgradeable{
@@ -17,7 +17,7 @@ contract PiggyFi is OwnableUpgradeable{
     address public underlying = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     /// @dev 1 Dai
-    uint public minimumDaiDeposit = 1e18;
+    uint public minimumDaiDeposit = 1 * 10 ** 18;
 
     /// @dev Imitate statuses from Venus and Compoud Protocol
     /// @param OK implicity converted to 0 by the compiler, 0 = success in aformentioned protocols
@@ -26,22 +26,28 @@ contract PiggyFi is OwnableUpgradeable{
     enum OrderType { BUY, SELL }
 
     /// @dev user Dia balances held in this protocol and not yet staked
-    /// @dev bytes32 username BEP20/ERC20 address
+    /// @dev string username BEP20/ERC20 address
     /// @dev uint user balance
-    mapping (bytes32 => uint) public diaBalances;
+    mapping (string => uint) public diaBalances;
 
     /// @param username P2P vendor name (UTF-8 bytes)
     /// @param balance Current liquidy of vendor
     /// @param buyRateMantissa vendors rate
-    /// @param orders Any value greater than 0 means atleast 1 order is still active for this listing, therefore vendor can't remove ads
+    /// @param openOrders Any value greater than 0 means atleast 1 order is still active for this listing, therefore vendor can't remove ads
     struct listing {
       string username;
-      uint balance;
+      uint value;
       uint buyRateMantissa;
       uint sellRateMantissa;
       uint minimumLimitMantissa;
       uint maximumLimitMantissa;
-      uint orders;
+      uint[] openOrders;
+    }
+
+    struct order {
+      string username;
+      uint value;
+      uint opened;
     }
 
     /// @param username Unique username (UTF-8 bytes)
@@ -82,6 +88,8 @@ contract PiggyFi is OwnableUpgradeable{
 
     listing[] public sellFiatListings;
 
+    order[] public orders;
+
     /// @dev Total liquidy available to savers
     uint public totalDiaLiquidity;
 
@@ -94,9 +102,13 @@ contract PiggyFi is OwnableUpgradeable{
 
     event NewRegistration(string indexed username, uint indexed registered);
 
-    event NewDiaListing(address indexed vendor, string indexed currency, string indexed order, listing _listing);
+    event NewDiaListing(address indexed vendor, string indexed currency, string indexed order, uint _amount);
 
-    event NewFiatListing(string indexed vendor, string indexed currency, string indexed order, listing _listing);
+    event NewFiatListing(string indexed vendor, string indexed currency, string indexed order, uint _amount);
+
+    event LiquidityAdded(address indexed vendor, uint amount);
+
+    event ReserveBuy(address indexed vendor, string indexed username, uint amount);
 
     modifier registered(string memory _username) {
        require(users[_username].registered > 0, "Only registered users can perform this action");
@@ -115,24 +127,27 @@ contract PiggyFi is OwnableUpgradeable{
 
     /// @dev New user registration
     /// @param _user struct consisting user registration
-    function newUser(user memory _user) public {
+    function newUser(user memory _user) public returns (user memory _account) {
       require(users[_user.username].registered > 0, "Username already taken!");
 
       users[_user.username] = _user;
       users[_user.username].registered = block.timestamp;
 
       emit NewRegistration(_user.username, block.timestamp);
+
+      return users[_user.username];
     }
 
     /// @dev Called by vendor to add new listing to sell Dai
     function sellDiaAds(listing memory _listing, string memory _username) public registered(_username) {
       require(sellDaiVendors[msg.sender] >= 0, "You have an existing sell listing");
+      require(diaBalances[_username] >= _listing.value, "You dont have sufficient Dai to list ads");
 
       sellDaiListings.push(_listing);
 
       sellDaiVendors[msg.sender] = sellDaiListings.length;
 
-      emit NewDiaListing(msg.sender, 'dai', 'sell', _listing);
+      emit NewDiaListing(msg.sender, 'dai', 'sell', _listing.value);
     }
 
     /// @dev Called by vendor to add new listing to buy Dai
@@ -143,7 +158,7 @@ contract PiggyFi is OwnableUpgradeable{
 
       buyDaiVendors[msg.sender] = buyDaiListings.length;
 
-      emit NewDiaListing(msg.sender, 'dai', 'buy', _listing);
+      emit NewDiaListing(msg.sender, 'dai', 'buy', _listing.value);
     }
 
     /// @dev Called by vendor to add new listing to sell Fiat
@@ -154,27 +169,60 @@ contract PiggyFi is OwnableUpgradeable{
 
       sellFiatVendors[_username] = sellDaiListings.length;
 
-      emit NewFiatListing(_username, 'fiat', 'sell', _listing);
+      emit NewFiatListing(_username, 'fiat', 'sell', _listing.value);
     }
 
     /// @dev Called by vendor to add new listing to buy Fiat
+    /// @dev _listing.value is in mantissa (1e8) to take care of decimals
     function buyFiatAds(listing memory _listing, string memory _username) public registered(_username) {
       require(buyFiatVendors[_username] >= 0, "You have an existing buy listing");
+      require(diaBalances[_username] >= _listing.value, "You dont have Dai to perform this action");
 
       buyFiatListings.push(_listing);
 
       buyFiatVendors[_username] = buyDaiListings.length;
 
-      emit NewFiatListing(_username, 'fiat', 'buy', _listing);
+      emit NewFiatListing(_username, 'fiat', 'buy', _listing.value);
     }
 
     /// @dev Only call this function if approve token is already called
+    /// @dev add Dai balance for vendor
     /// @param _amount In wei
-    function addDiaLiquidity(string memory _username, uint _amount) public registered(_username) {
-      require(msg.sender != 0, "Invalid address");
-      require(IERC20(underlying).allowance(msg.sender, address(this)) == _amount, "First approve this contract to spend your Dai");
-      require(amount >= minimumDaiDeposit, "Minimum deposit of 1 Dai");
+    function addDiaLiquidity(string memory _username, uint _amount) public registered(_username) returns (bool) {
+      require(msg.sender != address(0x0), "Invalid address");
+      require(IBEP20(underlying).allowance(msg.sender, address(this)) == _amount, "First approve this contract to spend your Dai");
+      require(_amount >= minimumDaiDeposit, "Minimum deposit of 1 Dai");
 
+      bool _successful = IBEP20(underlying).transfer(address(this), _amount);
 
+      require(_successful, "Transfer unsuccessful!");
+
+      diaBalances[_username] += _amount;
+
+      emit LiquidityAdded(msg.sender, _amount);
+
+      return _successful;
+    }
+
+     /// @dev Lock some Dai on an Ad to be realse on approval or added back on reject
+    function reserveBuy(address _adOwner, string memory _username, uint _amount) public registered(_username) returns(bool) {
+        uint _index = buyDaiVendors[_adOwner];
+
+        require(buyDaiListings[_index].value >= _amount,'Ads has been updated. Refresh page');
+        require(keccak256(bytes(_username)) != keccak256(bytes(buyDaiListings[_index].username)), "You annot reserve your own listing");
+
+        orders.push(order({
+          username: _username,
+          value: _amount,
+          opened: block.timestamp
+        }));
+
+        buyDaiListings[_index].openOrders.push(orders.length);
+
+        buyDaiListings[_index].value -= _amount;
+
+        emit ReserveBuy(_adOwner, _username, _amount);
+
+        return true;
     }
 }
