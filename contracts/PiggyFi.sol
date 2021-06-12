@@ -13,9 +13,11 @@ contract PiggyFi is OwnableUpgradeable{
     /// @dev To take care of decimals during exchange
     uint public mantissa = 1e8;
 
-    uint public minimumFiatTnxAllowed = 100 * 10 ** 8;
+    /// @dev Dia mainnet contract address
+    address public underlying = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    uint public maximumFiatTnxAllowed = 100000000 * 10 ** 8;
+    /// @dev 1 Dai
+    uint public minimumDaiDeposit = 1e18;
 
     /// @dev Imitate statuses from Venus and Compoud Protocol
     /// @param OK implicity converted to 0 by the compiler, 0 = success in aformentioned protocols
@@ -54,15 +56,15 @@ contract PiggyFi is OwnableUpgradeable{
       uint registered;
     }
 
-    mapping (bytes32 => user) public users;
+    mapping (string => user) public users;
 
     /// @dev address vendor
     /// @dev uint index in buyDiaListings
-    mapping (address => uint) public buyDiaVendors;
+    mapping (address => uint) public buyDaiVendors;
 
     /// @dev address vendor
-    /// @dev uint index in sellDiaListings
-    mapping (address => uint) public sellDiaVendors;
+    /// @dev uint index in sellDaiVendors
+    mapping (address => uint) public sellDaiVendors;
 
     /// @dev string vendor username
     /// @dev uint index in sellFiatListings
@@ -92,21 +94,29 @@ contract PiggyFi is OwnableUpgradeable{
 
     event NewRegistration(string indexed username, uint indexed registered);
 
-    event NewListing(address indexed vendor, string indexed currency, string indexed order, uint listing);
+    event NewDiaListing(address indexed vendor, string indexed currency, string indexed order, listing _listing);
+
+    event NewFiatListing(string indexed vendor, string indexed currency, string indexed order, listing _listing);
+
+    modifier registered(string memory _username) {
+       require(users[_username].registered > 0, "Only registered users can perform this action");
+       _;
+    }
 
     /// @dev contract constructor called only once
     function __PiggyFi_init() internal initializer{
       __Ownable_init();
     }
 
-    function checkUsernameAvailablilty(string username) public returns (bool available) {
-        return (users[_user.username] == 0);
+    /// @dev Verify if username is still available
+    function checkUsernameAvailablilty(string memory _username) public view returns (bool available) {
+        return users[_username].registered > 0;
     }
 
     /// @dev New user registration
     /// @param _user struct consisting user registration
-    function newUser(user _user) public {
-      require(users[_user.username] == 0, "Username already taken!");
+    function newUser(user memory _user) public {
+      require(users[_user.username].registered > 0, "Username already taken!");
 
       users[_user.username] = _user;
       users[_user.username].registered = block.timestamp;
@@ -115,14 +125,56 @@ contract PiggyFi is OwnableUpgradeable{
     }
 
     /// @dev Called by vendor to add new listing to sell Dai
-    function sellDiaListing(listing _listing) public {
-      require(sellDiaVendors[msg.sender] == 0, "You have an active listing");
+    function sellDiaAds(listing memory _listing, string memory _username) public registered(_username) {
+      require(sellDaiVendors[msg.sender] >= 0, "You have an existing sell listing");
 
-      uint _index = sellDaiListings.push(_listing);
+      sellDaiListings.push(_listing);
 
-      sellDiaVendors[msg.sender] = _index;
-      
-      emit NewListing(msg.sender, 'Dai', 'Sell', _listing);
+      sellDaiVendors[msg.sender] = sellDaiListings.length;
+
+      emit NewDiaListing(msg.sender, 'dai', 'sell', _listing);
     }
 
+    /// @dev Called by vendor to add new listing to buy Dai
+    function buyDiaAds(listing memory _listing, string memory _username) public registered(_username) {
+      require(buyDaiVendors[msg.sender] >= 0, "You have an existing buy listing");
+
+      buyDaiListings.push(_listing);
+
+      buyDaiVendors[msg.sender] = buyDaiListings.length;
+
+      emit NewDiaListing(msg.sender, 'dai', 'buy', _listing);
+    }
+
+    /// @dev Called by vendor to add new listing to sell Fiat
+    function sellFiatAds(listing memory _listing, string memory _username) public registered(_username) {
+      require(sellFiatVendors[_username] >= 0, "You have an existing sell listing");
+
+      sellFiatListings.push(_listing);
+
+      sellFiatVendors[_username] = sellDaiListings.length;
+
+      emit NewFiatListing(_username, 'fiat', 'sell', _listing);
+    }
+
+    /// @dev Called by vendor to add new listing to buy Fiat
+    function buyFiatAds(listing memory _listing, string memory _username) public registered(_username) {
+      require(buyFiatVendors[_username] >= 0, "You have an existing buy listing");
+
+      buyFiatListings.push(_listing);
+
+      buyFiatVendors[_username] = buyDaiListings.length;
+
+      emit NewFiatListing(_username, 'fiat', 'buy', _listing);
+    }
+
+    /// @dev Only call this function if approve token is already called
+    /// @param _amount In wei
+    function addDiaLiquidity(string memory _username, uint _amount) public registered(_username) {
+      require(msg.sender != 0, "Invalid address");
+      require(IERC20(underlying).allowance(msg.sender, address(this)) == _amount, "First approve this contract to spend your Dai");
+      require(amount >= minimumDaiDeposit, "Minimum deposit of 1 Dai");
+
+
+    }
 }
