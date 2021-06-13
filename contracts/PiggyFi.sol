@@ -23,8 +23,6 @@ contract PiggyFi is OwnableUpgradeable{
     /// @param OK implicity converted to 0 by the compiler, 0 = success in aformentioned protocols
     enum Statuses{ OK }
 
-    enum OrderType { BUY, SELL }
-
     /// @dev user Dia balances held in this protocol and not yet staked
     /// @dev string username BEP20/ERC20 address
     /// @dev uint user balance
@@ -69,7 +67,7 @@ contract PiggyFi is OwnableUpgradeable{
     mapping (address => uint) public buyDaiVendors;
 
     /// @dev address vendor
-    /// @dev uint index in sellDaiVendors
+    /// @dev uint index in sellDaiListings
     mapping (address => uint) public sellDaiVendors;
 
     /// @dev string vendor username
@@ -90,6 +88,7 @@ contract PiggyFi is OwnableUpgradeable{
 
     order[] public orders;
 
+
     /// @dev Total liquidy available to savers
     uint public totalDiaLiquidity;
 
@@ -102,11 +101,13 @@ contract PiggyFi is OwnableUpgradeable{
 
     event NewRegistration(string indexed username, uint indexed registered);
 
-    event NewDiaListing(address indexed vendor, string indexed currency, string indexed order, uint _amount);
+    event NewDaiListing(address indexed vendor, string indexed currency, string indexed order, uint _amount);
 
     event NewFiatListing(string indexed vendor, string indexed currency, string indexed order, uint _amount);
 
     event LiquidityAdded(address indexed vendor, uint amount);
+
+    event DaiAdded(address indexed vendor, uint amount);
 
     event ReserveBuy(address indexed vendor, string indexed username, uint amount);
 
@@ -147,7 +148,7 @@ contract PiggyFi is OwnableUpgradeable{
 
       sellDaiVendors[msg.sender] = sellDaiListings.length;
 
-      emit NewDiaListing(msg.sender, 'dai', 'sell', _listing.value);
+      emit NewDaiListing(msg.sender, 'dai', 'sell', _listing.value);
     }
 
     /// @dev Called by vendor to add new listing to buy Dai
@@ -158,7 +159,7 @@ contract PiggyFi is OwnableUpgradeable{
 
       buyDaiVendors[msg.sender] = buyDaiListings.length;
 
-      emit NewDiaListing(msg.sender, 'dai', 'buy', _listing.value);
+      emit NewDaiListing(msg.sender, 'dai', 'buy', _listing.value);
     }
 
     /// @dev Called by vendor to add new listing to sell Fiat
@@ -188,6 +189,7 @@ contract PiggyFi is OwnableUpgradeable{
     /// @dev Only call this function if approve token is already called
     /// @dev add Dai balance for vendor
     /// @param _amount In wei
+    /// @dev Vendors sneds transactions using non-custodain wallet assigned during registration
     function addDiaLiquidity(string memory _username, uint _amount) public registered(_username) returns (bool) {
       require(msg.sender != address(0x0), "Invalid address");
       require(IBEP20(underlying).allowance(msg.sender, address(this)) == _amount, "First approve this contract to spend your Dai");
@@ -198,6 +200,7 @@ contract PiggyFi is OwnableUpgradeable{
       require(_successful, "Transfer unsuccessful!");
 
       diaBalances[_username] += _amount;
+      totalDiaLiquidity += _amount;
 
       emit LiquidityAdded(msg.sender, _amount);
 
@@ -205,11 +208,12 @@ contract PiggyFi is OwnableUpgradeable{
     }
 
      /// @dev Lock some Dai on an Ad to be realse on approval or added back on reject
+     /// @dev Function call by user performing P2P to get Dai
     function reserveBuy(address _adOwner, string memory _username, uint _amount) public registered(_username) returns(bool) {
         uint _index = buyDaiVendors[_adOwner];
 
         require(buyDaiListings[_index].value >= _amount,'Ads has been updated. Refresh page');
-        require(keccak256(bytes(_username)) != keccak256(bytes(buyDaiListings[_index].username)), "You annot reserve your own listing");
+        require(keccak256(bytes(_username)) != keccak256(bytes(buyDaiListings[_index].username)), "You cannot reserve your own listing");
 
         orders.push(order({
           username: _username,
@@ -219,10 +223,34 @@ contract PiggyFi is OwnableUpgradeable{
 
         buyDaiListings[_index].openOrders.push(orders.length);
 
+        //Reserve Dia for this trade
         buyDaiListings[_index].value -= _amount;
 
         emit ReserveBuy(_adOwner, _username, _amount);
 
         return true;
     }
+
+    /// @dev Function call by vendor to approve buy.
+    /// @dev Vendors sends transactions using non-custodain wallet assigned during registration
+    function approveBuy(uint orderIndex, uint _amount) public {
+      // assert(buyDaiListings[orderIndex].value >= _amount,'Ads was updated');
+      uint _index = buyDaiVendors[msg.sender];
+      require(buyDaiListings[_index].openOrders[orderIndex].value == _amount,'');
+
+      string memory _username = buyDaiListings[_index].openOrders[orderIndex].username;
+
+      diaBalances[_username] += _amount;
+
+      delete buyDaiListings[_index].openOrders[orderIndex];
+
+      emit DaiAdded(_username, _amount);
+    }
+
+
+    //approveBuy
+    //Save
+    //Withdraw
+    //Write tests (add user, supply dia, reserveBuy, approveBuy, save, withdraw)
+    //Write Nodejs version
 }
