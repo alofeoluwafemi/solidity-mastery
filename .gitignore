@@ -1,10 +1,8 @@
 *.stub
-scripts
 node_modules
 .idea/
 .env
 package-lock.json
-build/
 .git/
 .DS_Store
 README.stub
