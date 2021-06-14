@@ -1,13 +1,21 @@
-![Piggy.Fi](https://drewhyte-west-1.s3.us-west-1.amazonaws.com/Piggy.fi.jpg)
 
-### Problem
+## The Complete Solidity Mastery Course
+### Learn how to build dapps using solidity & other tools. In this course you will get to build and deploy a DeFi App
 
-Inflation in Nigeria today keeps devaluing the population's hard earned money coupled with the Nigerian government's recent policy and ban. The country has not been attractive to foreign investors or trade of late which keeps making the Nigerian Naira devalue more against the US dollars.
+This course is very hands-on, in the sense that you will get to write a lot of code and understand the intricacies of Solidity programming language. The course is accompanied by a few tasks that stretch you a bit so be prepared for that.
 
-In the span of 12 months we have seen the Naira devalue drastically from **$1 ~ 360 NGN** to **$1 ~ 500 NGN**.  Which means, a savings of **500,000 NGN** equivalent of **$1,389** then, now worths about **$1,000** or a little more than that. It's frustrating for an average Nigerian to see their savings dwindle such a short time.
+I designed this course like what I would have needed to land my first Solidity developer job. You don’t just get to write a contract that simply inserts and fetches data from the blockchain but you will get to build a Defi Saving Dapps the takes ETH as savings from customers and generates interest on savings using Compound Protocol autonomous interest rate.
 
-The emergence of crypto currencies has enabled a few Nigerians to easily convert their savings from Fiat to stable coins such as Dai, BUSD or USDC but only a few people have the technical know-how to do so.
+This course will be making use of Solidity version 0.8.0 for a start and in the future, if there are any major breaking changes, the course will be updated accordingly.
 
-### Solution
+**What should you expect from this course?**
 
-Piggy.Fi is a savings platform <u>without the need of an ethereum client</u>, that allows savings using Fiat (NGN), which are in turn converted into stable coins via a P2P market and staked on Lending platforms such as Compound &amp; Venus protocol to earn interest. Upon withdrawal of savings as stable coins, it can be converted back to Fiat via a P2P market.
+- Learn how all you need to know to start building smart contracts using the solidity programming language including writing tests in javascript.
+
+- Get comfortable building Dapps with tools and technologies such as Infura, Metamask, Ethers.js, Web3, Ganache, Compound Protocol, Truffle, and many others.
+
+- Write an API with Nodejs to interact with the Blockchain and not only through users browser?
+
+- By the end of this course, you will get to build and deploy a Defi Savings Dapps that accept savings in Fait (Local currency, US Dollars ), converts it to Dai Stable coins, and add it to the Compound Supply Market to generate interest in every ethereum block.
+
+ 

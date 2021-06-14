@@ -1,4 +1,4 @@
-Defi.md
+*.stub
 scripts
 node_modules
 .idea/
@@ -7,3 +7,5 @@ package-lock.json
 build/
 .git/
 .DS_Store
+README.stub
+contracts/*.stub

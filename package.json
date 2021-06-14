@@ -22,6 +22,9 @@
   "author": "Oluwafemi Alofe",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.3.6"
   },
   "devDependencies": {
