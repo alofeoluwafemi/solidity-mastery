@@ -84,6 +84,7 @@ contract DeFi{
 
     event ReserveBuy(address indexed vendor, string indexed username, uint amount);
 
+
     /// @dev New user registration
     /// @param _user struct consisting user registration
     function newUser(user memory _user) public returns (user memory _account) {

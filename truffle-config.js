@@ -18,6 +18,12 @@
  *
  */
 
+
+ // oluwafemialofe@Oluwafemis-Air ~ % ganache-cli \
+ //   -f https://mainnet.infura.io/v3/6bc18c1e6e0e4ae8883f16b2010f48be \
+ //     -m "cliff ring lab easy fresh vicious cattle then weather dash derive lamp" \
+ //   -i 1 \
+ //   -u 0x9759A6Ac90977b93B58547b4A71c78317f391A28
 // const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
 //
