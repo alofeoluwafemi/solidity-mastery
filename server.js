@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.route('/ping').get((req, res) => {
-  return res.send(contractJson.abi);
+  return res.send("pong...");
 });
 
 app.route('/defi/add/:username').get(async (req, res) => {
@@ -64,5 +64,6 @@ app.route('/defi/balance/:username').get(async (req, res) => {
     });
 });
 
+//Add more routes here to perform further actions here
 
 app.listen(port, () => console.log(`API server running on port ${port}`));
