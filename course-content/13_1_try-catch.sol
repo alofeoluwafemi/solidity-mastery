@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 /*
 A failure in an external call can be caught using a try/catch statement
 
-Before veron 0.6.0 Catching error has been handled using call, delegatecall and staticcall
+Before version 0.6.0 Catching error has been handled using call, delegatecall and staticcall
 */
 
 contract OldTryCatch {
